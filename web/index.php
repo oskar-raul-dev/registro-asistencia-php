@@ -167,7 +167,8 @@ function cargar_asistencia_persona($conn, $id_persona, $id_registro_asistencia) 
         `asistencia_persona`.`id_persona`,
         `asistencia_persona`.`id_registro_asistencia`,
         `asistencia_persona`.`asistencia`,
-        `asistencia_persona`.`observaciones`
+        `asistencia_persona`.`observaciones`,
+		`asistencia_persona`.`supervisor_asignado`
     FROM `asistencia_persona`
     WHERE `asistencia_persona`.`id_persona` = {$id_persona_escape}
     AND `asistencia_persona`.`id_registro_asistencia` = {$id_registro_asistencia_escape}";
@@ -199,16 +200,21 @@ function insertar_asistencia_persona($conn, $asistencia_persona) {
   $observaciones_escape = empty(trim($asistencia_persona['observaciones']))
       ? 'null'
       : "'" . $conn->real_escape_string($asistencia_persona['observaciones']) . "'";
+  $supervisor_asignado_escape = empty(trim($asistencia_persona['supervisor_asignado']))
+      ? 'null'
+      : "'" . $conn->real_escape_string($asistencia_persona['supervisor_asignado']) . "'";
   $query = "INSERT INTO `asistencia_persona`
       (`id_persona`,
       `id_registro_asistencia`,
       `asistencia`,
-      `observaciones`)
+      `observaciones`,
+	  `supervisor_asignado`)
       VALUES
       ({$id_persona_escape},
       {$id_registro_asistencia_escape},
       {$asistencia_escape},
-      {$observaciones_escape})";
+      {$observaciones_escape},
+	  {$supervisor_asignado_escape})";
   ejecutar_query_update($conn, $query);
   return ultimo_id_insert($conn);
 }
@@ -221,10 +227,14 @@ function editar_asistencia_persona($conn, $asistencia_persona) {
   $observaciones_escape = empty(trim($asistencia_persona['observaciones']))
       ? 'null'
       : "'" . $conn->real_escape_string($asistencia_persona['observaciones']) . "'";
+  $supervisor_asignado_escape = empty(trim($asistencia_persona['supervisor_asignado']))
+      ? 'null'
+      : "'" . $conn->real_escape_string($asistencia_persona['supervisor_asignado']) . "'";
   $query = "UPDATE `asistencia_persona`
       SET
       `asistencia` = {$asistencia_escape},
-      `observaciones` = {$observaciones_escape}
+      `observaciones` = {$observaciones_escape},
+	  `observaciones` = {$supervisor_asignado_escape}
       WHERE `id` = {$id_escape}";
   ejecutar_query_update($conn, $query);
   return ultimo_id_insert($conn);
@@ -349,6 +359,7 @@ if (!empty($_POST)) {
     // sacar los campos de registro de asistencia
     $asistencia = $_POST['asistencia'][$i];
     $observaciones = $_POST['observaciones'][$i];
+	$supervisor_asignado = $_POST['supervisor_asignado'][$i];
     
     // se inserta o actualiza asistencia de persona
     $persona = cargar_persona_por_id($conexion_bd, $id_persona);
@@ -359,7 +370,8 @@ if (!empty($_POST)) {
         'id_persona'  => $id_persona,
         'id_registro_asistencia' => $id_registro_asistencia,
         'asistencia' => $asistencia,
-        'observaciones' => $observaciones
+        'observaciones' => $observaciones,
+		'supervisor_asignado'=> $supervisor_asignado
       ];
       $id_asistencia_persona = insertar_asistencia_persona($conexion_bd, $asistencia_persona);
       $asistencia_persona['id'] = $id_asistencia_persona;
@@ -367,6 +379,7 @@ if (!empty($_POST)) {
       // se actualiza
       $asistencia_persona['asistencia'] = $asistencia;
       $asistencia_persona['observaciones'] = $observaciones;
+	  $asistencia_persona['supervisor_asignado'] = $supervisor_asignado;
       editar_asistencia_persona($conexion_bd, $asistencia_persona);
     }
 
@@ -381,6 +394,7 @@ if (!empty($_POST)) {
       'id_asistencia_persona' => $asistencia_persona['id'],
       'asistencia' => $asistencia_persona['asistencia'],
       'observaciones' => $asistencia_persona['observaciones'],
+	  'supervisor_asignado' => $asistencia_persona['supervisor_asignado']
     ];
   }
 
@@ -424,7 +438,8 @@ if (!empty($_POST)) {
         'id_persona' => '-1',
         'id_asistencia_persona' => '-1',
         'asistencia'  => '',
-        'observaciones' => ''];
+        'observaciones' => '',
+		'supervisor_asignado'=> ''];
     }
     
     // se agrega el item de asistencia al reporte
@@ -438,6 +453,7 @@ if (!empty($_POST)) {
       'id_asistencia_persona' => $asistencia_persona['id'],
       'asistencia' => $asistencia_persona['asistencia'],
       'observaciones' => $asistencia_persona['observaciones'],
+	  'supervisor_asignado' => $asistencia_persona['supervisor_asignado'],
     ];
   }
 
@@ -578,6 +594,7 @@ $mostrar_reporte = !empty($reporte_asistencia)
                 <th>DNI</th>
                 <th>Nombre</th>
                 <th>Email</th>
+				 <th>Supervisor</th>
                 <th>Asistencia</th>
                 <th>Observaciones</th>
               </tr>
@@ -591,8 +608,8 @@ $mostrar_reporte = !empty($reporte_asistencia)
                 $email_persona = $item_persona['email_persona'];
                 $asistencia_persona = $item_persona['asistencia'];
                 $observaciones_persona = $item_persona['observaciones'];
+                $supervisor_asignado_persona = $item_persona['supervisor_asignado'];
                 $id_asistencia_persona = $item_persona['id_asistencia_persona'];
-                
                 // los campos selected para opciones de combo
                 $selected_vacio = empty($asistencia_persona) 
                     ? 'selected'
@@ -612,6 +629,10 @@ $mostrar_reporte = !empty($reporte_asistencia)
                   <td><?php echo $nombre_persona ?></td>
                   <td><?php echo $email_persona ?></td>
                   <td>
+                    <!-- Caja texto supervisor -->
+                    <input type="text" maxlength="50" name="supervisor_asignado[]" id="" value="<?php echo $supervisor_asignado_persona?>">
+                  </td>
+				   <td>
                     <!-- Campo oculto id persona -->
                     <input type="hidden" name="id_persona[]" value="<?php echo $id_persona ?>">
                     <!-- Campo oculto id registro_asistencia -->
